@@ -1,0 +1,32 @@
+[app]
+pageSize = 10
+
+[server]
+runMode = "debug"
+address = "0.0.0.0:8989"
+
+[ORM]
+DSN = "root:rootroot@/nblog?charset=utf8&parseTime=True&loc=Local"
+Active = 50
+Idle = 100
+IdleTimeout = 300
+
+[zap]
+filename = "zap.log"
+# 日志最大限制，单位MB
+maxSize = 200
+# 保存的天数
+maxAge = 7
+# 最大保留备份数
+maxBackups = 3
+localTime = true
+# 是否压缩
+compress = true
+# 日志级别
+level = 0
+# 是否开发模式
+isDev = false
+# 是否开启标准输出日志
+stdLogEnable = true
+# 是否开启文件日志输出
+fileLogEnable = false
