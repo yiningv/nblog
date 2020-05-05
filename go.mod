@@ -15,6 +15,7 @@ require (
 	github.com/henrylee2cn/surfer v1.2.3 // indirect
 	github.com/jinzhu/gorm v1.9.12
 	github.com/kjk/notionapi v0.0.0-20200324071853-a111439018ed
+	github.com/smartystreets/goconvey v1.6.4 // indirect
 	go.uber.org/zap v1.15.0
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 )
