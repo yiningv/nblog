@@ -17,3 +17,8 @@ go.sum
 # IDE
 .idea/
 .DS_Store
+
+# nodejs
+# Dependency directories
+node_modules/
+yarn.lock

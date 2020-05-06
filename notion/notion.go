@@ -19,9 +19,9 @@ var (
 )
 
 func main() {
-	GetSiteConfig()
-	GetSourceConfig()
-	GetConfigFromNotion(siteConfigPageId, nil)
+	//GetSiteConfig()
+	//GetSourceConfig()
+	GetConfigFromNotion(sourceConfigPageId, nil)
 }
 
 // 从notion上获取站点配置
@@ -76,11 +76,24 @@ func GetSiteConfig() {
 	}
 }
 
+type KV struct {
+	K string `json:"k"`
+	V string `json:"v"`
+}
+
+type Date struct {
+	StartDate string `json:"start_date"`
+	EndDate string `json:"end_date"`
+	Type string `json:"type"`
+	TimeZone string `json:"time_zone"`
+}
+
 type DealTableFn func(hColumns []*notionapi.ColumnInfo, tRow *notionapi.TableRow)
 
 func GetConfigFromNotion(pageId string, fn DealTableFn) (result []map[string]interface{}, err error) {
 	c := notionapi.Client{}
-	page, err := c.DownloadPage(pageId)
+	var page *notionapi.Page
+	page, err = c.DownloadPage(pageId)
 	if err != nil {
 		log.Error(fmt.Sprintf("GetConfigFromNotion for pageId(%s) error: %v", pageId, err))
 		return
@@ -108,6 +121,8 @@ func GetConfigFromNotion(pageId string, fn DealTableFn) (result []map[string]int
 				continue
 			}
 			value := ""
+			// person、rollup、formula
+			// 不支持这几个类型，跳过
 			switch hColumn.Type() {
 			case "title":
 			case "url":
@@ -131,18 +146,39 @@ func GetConfigFromNotion(pageId string, fn DealTableFn) (result []map[string]int
 				}
 			case "checkbox":
 				value = strconv.FormatBool(tColumn[0].Text == "Yes")
-			case "person":
-
 			case "date":
-				//
+				dateStr := tColumn[0].Attrs[0][1]
+				var date *Date
+				err = json.Unmarshal([]byte(dateStr), date)
+				if err != nil {
+					return
+				}
+				var marshal []byte
+				marshal, err = json.Marshal(date)
+				if err != nil {
+					return
+				}
+				value = string(marshal)
 			case "file":
-				for _, colInfo := range tColumn {
+				//kv := make(map[string]string)
+				list := make([]*KV, len(tColumn))
+				for i, colInfo := range tColumn {
 					if !colInfo.IsPlain() {
-						value = colInfo.Attrs[0][1]
+						kv := &KV{
+							K: colInfo.Text,
+							V: colInfo.Attrs[0][1],
+						}
+						list[i] = kv
 					}
 				}
-			case "rollup":
-
+				var marshal []byte
+				marshal, err = json.Marshal(list)
+				if err != nil {
+					return
+				}
+				value = string(marshal)
+			default:
+				continue
 			}
 			key := hColumn.Name()
 			if key == "image" {
