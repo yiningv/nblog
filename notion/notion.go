@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	siteConfigPageId   = "159280121cbc44ecb7ef074534a8897f"
-	sourceConfigPageId = "926a2ae5b91d45d985961743d230c4c2"
+	siteConfigPageId = "11073406550448878e83518765775a2d"
+	sourceConfigPageId = "88f12fa904a445dcbffeaad4fe2c7178"
 )
 
 var (

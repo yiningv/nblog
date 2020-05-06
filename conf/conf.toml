@@ -1,5 +1,6 @@
 [app]
-pageSize = 10
+siteConfigPageId = "11073406550448878e83518765775a2d"
+sourceConfigPageId = "88f12fa904a445dcbffeaad4fe2c7178"
 
 [server]
 runMode = "debug"
