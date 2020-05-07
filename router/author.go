@@ -1,4 +1,4 @@
-package admin
+package router
 
 import (
 	"github.com/dgrijalva/jwt-go"

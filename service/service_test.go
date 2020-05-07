@@ -1,14 +1,15 @@
-package dao
+package service
 
 import (
 	"flag"
 	"github.com/yiningv/nblog/conf"
+	"github.com/yiningv/nblog/pub/log"
 	"os"
 	"testing"
 )
 
 var (
-	d *Dao
+	srv *Service
 )
 
 func TestMain(m *testing.M) {
@@ -19,6 +20,7 @@ func TestMain(m *testing.M) {
 	if err := conf.Init(); err != nil {
 		panic(err)
 	}
-	d = New(conf.Conf)
+	log.InitLogByConfig(conf.Conf.Zap)
+	srv = New(conf.Conf)
 	os.Exit(m.Run())
 }

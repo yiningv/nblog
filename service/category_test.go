@@ -1,4 +1,4 @@
-package dao
+package service
 
 import (
 	"github.com/smartystreets/goconvey/convey"
@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestDaoAddCategory(t *testing.T) {
+func TestAddCategory(t *testing.T) {
 	convey.Convey("AddCategory", t, func(ctx convey.C) {
 		var (
 			arg = &model.Category{
@@ -16,7 +16,7 @@ func TestDaoAddCategory(t *testing.T) {
 			}
 		)
 		ctx.Convey("When everything goes positive", func(ctx convey.C) {
-			err := d.AddCategory(arg)
+			err := srv.AddCategory(arg)
 			ctx.Convey("Then err should be nil.", func(ctx convey.C) {
 				ctx.So(err, convey.ShouldBeNil)
 			})

@@ -20,7 +20,8 @@ type Config struct {
 }
 
 type AppConfig struct {
-	PageSize int
+	SiteConfigPageId   string
+	SourceConfigPageId string
 }
 
 type ServerConfig struct {
@@ -29,7 +30,7 @@ type ServerConfig struct {
 }
 
 func init() {
-	flag.StringVar(&ConfPath, "conf", "", "default config path")
+	flag.StringVar(&ConfPath, "conf", "./conf/conf.toml", "default config path")
 }
 
 // 初始化配置文件
