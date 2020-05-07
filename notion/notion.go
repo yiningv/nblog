@@ -12,7 +12,7 @@ import (
 )
 
 // 从notion上获取站点配置
-func GetSiteConfig() (sc []*model.SiteConfig, err error) {
+func GetSiteConfig() (sc map[string]*model.SiteConfig, err error) {
 	var tableDatas []map[string]interface{}
 	tableDatas, err = getConfigFromNotion(conf.Conf.App.SiteConfigPageId)
 	if err != nil {
@@ -23,12 +23,22 @@ func GetSiteConfig() (sc []*model.SiteConfig, err error) {
 	if err != nil {
 		return
 	}
-	err = json.Unmarshal(data, &sc)
+	var siteConfigs []*model.SiteConfig
+	err = json.Unmarshal(data, &siteConfigs)
+	if err != nil {
+		return
+	}
+	sc = map[string]*model.SiteConfig{}
+	// 去掉name重复的数据
+	for i := range siteConfigs {
+		c := siteConfigs[i]
+		sc[c.Name] = c
+	}
 	return
 }
 
 // 获取资源配置
-func GetSourceConfig() (sc []*model.SourceConfig, err error) {
+func GetSourceConfig() (sc map[string]*model.SourceConfig, err error) {
 	var tableDatas []map[string]interface{}
 	tableDatas, err = getConfigFromNotion(conf.Conf.App.SourceConfigPageId)
 	if err != nil {
@@ -39,7 +49,17 @@ func GetSourceConfig() (sc []*model.SourceConfig, err error) {
 	if err != nil {
 		return
 	}
-	err = json.Unmarshal(data, &sc)
+	var sourceConfigs []*model.SourceConfig
+	err = json.Unmarshal(data, &sourceConfigs)
+	if err != nil {
+		return
+	}
+	sc = map[string]*model.SourceConfig{}
+	// 去掉name重复的数据
+	for i := range sourceConfigs {
+		c := sourceConfigs[i]
+		sc[c.Name] = c
+	}
 	return
 }
 
@@ -143,6 +163,7 @@ func getConfigFromNotion(pageId string) (result []map[string]interface{}, err er
 			rowMap[key] = value
 		}
 		if len(rowMap) != 0 {
+			rowMap["last_edited_time"] = tRow.Page.LastEditedTime
 			result = append(result, rowMap)
 		}
 	}

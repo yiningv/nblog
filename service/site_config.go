@@ -1,6 +1,7 @@
 package service
 
 import (
+	"github.com/jinzhu/gorm"
 	"github.com/yiningv/nblog/model"
 )
 
@@ -11,7 +12,7 @@ func (srv *Service) GetSiteConfig() (siteConf []*model.SiteConfig, err error) {
 }
 
 // 添加站点配置
-func (srv *Service) AddSiteConfig(arg *model.SiteConfig) error {
+func (srv *Service) AddSiteConfig(arg *model.SiteConfig) (err error) {
 	return srv.dao.Table(model.SiteConfigTable).Create(arg).Error
 }
 
@@ -26,11 +27,46 @@ func (srv *Service) BatchDeleteSiteConfig(ids []int64) (err error) {
 }
 
 // 修改站点配置
-func (srv *Service) UpdateSiteConfig(arg *model.SiteConfig) error {
-	args := make(map[string]interface{})
-	args["name"] = arg.Name
-	args["type"] = arg.Type
-	args["value"] = arg.Value
-	args["desc"] = arg.Desc
-	return srv.dao.Table(model.SiteConfigTable).Where("id=?", arg.ID).Update(args).Error
+func (srv *Service) UpdateSiteConfig(arg *model.SiteConfig) (err error) {
+	return srv.dao.Table(model.SiteConfigTable).Where("id=?", arg.ID).Update(arg).Error
+}
+
+// 修改站点配置
+func (srv *Service) BatchUpdateSiteConfig(fromDB []*model.SiteConfig, confMap map[string]*model.SiteConfig) (err error) {
+	save := make([]*model.SiteConfig, 0)
+	delIds := make([]int, 0)
+	for i := range fromDB {
+		scDB := fromDB[i]
+		if sc, ok := confMap[scDB.Name]; ok {
+			sc.ID = scDB.ID
+			if sc.LastEditedTime < scDB.LastEditedTime {
+				save = append(save, sc)
+			}
+			delete(confMap, scDB.Name)
+		} else {
+			delIds = append(delIds, scDB.ID)
+		}
+	}
+	for k := range confMap {
+		save = append(save, confMap[k])
+	}
+	if len(save) == 0 && len(delIds) == 0 {
+		return
+	}
+	err = srv.dao.Transaction(func(tx *gorm.DB) (err error) {
+		if len(delIds) > 0 {
+			if err = tx.Table(model.SiteConfigTable).Where("id IN (?)", delIds).Delete(&model.SiteConfig{}).Error; err != nil {
+				return
+			}
+		}
+
+		for i := range save {
+			config := save[i]
+			if err = tx.Table(model.SiteConfigTable).Save(config).Error; err != nil {
+				return
+			}
+		}
+		return
+	})
+	return
 }

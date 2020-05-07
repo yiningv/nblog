@@ -9,7 +9,7 @@ import (
 )
 
 // SourceConfig cache.
-var SourceConfig = &SiteConfigCache{
+var SourceConfig = &SourceConfigCache{
 	nameHolder: gcache.New(1024 * 10).LRU().Expiration(30 * time.Minute).Build(),
 }
 

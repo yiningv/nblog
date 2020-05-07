@@ -23,6 +23,6 @@ func NewDB(c *Config) (db *gorm.DB) {
 	db.DB().SetMaxOpenConns(c.Active)
 	db.DB().SetConnMaxLifetime(c.IdleTimeout * time.Second)
 	db.SingularTable(true)
-	db.AutoMigrate(&model.Category{}, &model.SiteConfig{})
+	db.AutoMigrate(&model.SiteConfig{}, &model.SourceConfig{})
 	return
 }

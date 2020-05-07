@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 	"github.com/jinzhu/gorm"
+	"github.com/yiningv/nblog/cache"
 	"github.com/yiningv/nblog/conf"
 	"github.com/yiningv/nblog/notion"
 	"github.com/yiningv/nblog/pub/db"
@@ -33,16 +34,53 @@ func (srv *Service) Close() (err error) {
 	return
 }
 
-func (srv *Service) InitData() {
-	// 初始化时从数据库中读取站点配置和资源配置
-	dbSiteConfs, err := srv.GetSiteConfig()
+func (srv *Service) SyncData() {
+	srv.SyncSiteConfig()
+	srv.SyncSourceConfig()
+}
+
+func (srv *Service) SyncSiteConfig() {
+	siteConfigMap, err := notion.GetSiteConfig()
 	if err != nil {
-		log.Error(fmt.Sprintf("router.Init error: %v", err))
+		log.Error(fmt.Sprintf("notion.GetSiteConfig failed: %v", err))
 		panic(err)
 	}
-	if len(dbSiteConfs) == 0 {
-		// 从notion上读取配置文件，更新数据库和缓存
-		notion.GetSiteConfig()
+
+	siteConfigsDB, err := srv.GetSiteConfig()
+	if err != nil {
+		log.Error(fmt.Sprintf("srv.GetSiteConfig failed: %v", err))
+		panic(err)
 	}
 
+	err = srv.BatchUpdateSiteConfig(siteConfigsDB, siteConfigMap)
+	if err != nil {
+		panic(err)
+	}
+	for k := range siteConfigMap {
+		site := siteConfigMap[k]
+		cache.SiteConfig.Put(site)
+	}
+}
+
+func (srv *Service) SyncSourceConfig() {
+	sourceConfigMap, err := notion.GetSourceConfig()
+	if err != nil {
+		log.Error(fmt.Sprintf("notion.GetSourceConfig failed: %v", err))
+		panic(err)
+	}
+
+	sourceConfigDB, err := srv.GetSourceConfig()
+	if err != nil {
+		log.Error(fmt.Sprintf("srv.GetSourceConfig failed: %v", err))
+		panic(err)
+	}
+
+	err = srv.BatchUpdateSourceConfig(sourceConfigDB, sourceConfigMap)
+	if err != nil {
+		panic(err)
+	}
+	for k := range sourceConfigMap {
+		source := sourceConfigMap[k]
+		cache.SourceConfig.Put(source)
+	}
 }
