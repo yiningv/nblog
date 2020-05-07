@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"github.com/gin-gonic/gin"
@@ -12,6 +13,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 )
 
 func main() {
@@ -26,6 +28,7 @@ func main() {
 	address := conf.Conf.Server.Address
 	log.Info(fmt.Sprintf("Listening and serving HTTP on %s\n", address))
 	srv := service.New(conf.Conf)
+	go srv.SyncData()
 	routes := router.Routes(srv)
 	server := &http.Server{
 		Addr:    address,
@@ -33,27 +36,34 @@ func main() {
 	}
 	handleSignal(server, srv)
 	if err := server.ListenAndServe(); err != nil {
-		panic(err)
+		log.Error(fmt.Sprintf("listen and serve failed: %v", err))
 	}
 }
 
 // handleSignal handles system signal for graceful shutdown.
 func handleSignal(server *http.Server, srv *service.Service) {
 	c := make(chan os.Signal)
-	signal.Notify(c, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM)
+	signal.Notify(c, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGHUP)
 
-	go func() {
+	for {
 		s := <-c
-		log.Info(fmt.Sprintf("got signal [%s], exiting pipe now", s))
-		if err := server.Close(); nil != err {
-			log.Info(fmt.Sprintf("server close failed: %v", err))
+		log.Info(fmt.Sprintf("get a signal %s", s.String()))
+		switch s {
+		case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT:
+			ctx, cancel := context.WithTimeout(context.Background(), 35*time.Second)
+			defer cancel()
+			if err := server.Shutdown(ctx); nil != err {
+				log.Info(fmt.Sprintf("server shutdown failed: %v", err))
+			}
+			if err := srv.Close(); nil != err {
+				log.Info(fmt.Sprintf("service close failed: %v", err))
+			}
+			log.Info("nblog exited")
+			time.Sleep(time.Second)
+			return
+		case syscall.SIGHUP:
+		default:
+			return
 		}
-
-		if err := srv.Close(); nil != err {
-			log.Info(fmt.Sprintf("service close failed: %v", err))
-		}
-
-		log.Info("nblog exited")
-		os.Exit(0)
-	}()
+	}
 }
