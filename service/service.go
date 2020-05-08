@@ -39,6 +39,7 @@ func (srv *Service) SyncData() {
 	srv.SyncSourceConfig()
 }
 
+// 同步站点配置
 func (srv *Service) SyncSiteConfig() {
 	siteConfigMap, err := notion.GetSiteConfig()
 	if err != nil {
@@ -62,6 +63,7 @@ func (srv *Service) SyncSiteConfig() {
 	}
 }
 
+// 同步资源配置
 func (srv *Service) SyncSourceConfig() {
 	sourceConfigMap, err := notion.GetSourceConfig()
 	if err != nil {

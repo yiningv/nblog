@@ -45,7 +45,7 @@ func handleSignal(server *http.Server, srv *service.Service) {
 	c := make(chan os.Signal)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGHUP)
 
-	for {
+	go func() {
 		s := <-c
 		log.Info(fmt.Sprintf("get a signal %s", s.String()))
 		switch s {
@@ -65,5 +65,5 @@ func handleSignal(server *http.Server, srv *service.Service) {
 		default:
 			return
 		}
-	}
+	}()
 }

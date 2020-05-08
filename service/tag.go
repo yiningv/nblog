@@ -8,6 +8,7 @@ import (
 )
 
 // 标签列表
+//
 func (srv *Service) GetTags(pn, ps int) (pager *model.TagPager, err error) {
 	pager = &model.TagPager{}
 	dao := srv.dao.Table(model.TagTable)

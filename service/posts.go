@@ -8,41 +8,41 @@ import (
 )
 
 // 文章列表
-func (srv *Service) GetArticles(pn, ps int) (pager *model.ArticlePager, err error) {
-	pager = &model.ArticlePager{}
-	dao := srv.dao.Table(model.ArticleTable)
+func (srv *Service) GetPostsPager(pn, ps int) (pager *model.PostsPager, err error) {
+	pager = &model.PostsPager{}
+	dao := srv.dao.Table(model.PostsTable)
 	page := &model.Page{
 		Pn: pn,
 		Ps: ps,
 	}
 	pager.Page = page
 	if err = dao.Count(&page.Total).Error; err != nil {
-		log.Error(fmt.Sprintf("GetArticles Count Error %v", err))
+		log.Error(fmt.Sprintf("GetPostsPager Count Error %v", err))
 		return
 	}
-	var arts []*model.Article
-	pager.Items = arts
-	if err = dao.Order("ctime DESC").Offset((pn - 1) * ps).Limit(ps).Find(&arts).Error; err != nil {
-		log.Error(fmt.Sprintf("GetArticles Error %v", err))
+	var posts []*model.Posts
+	pager.Items = posts
+	if err = dao.Order("ctime DESC").Offset((pn - 1) * ps).Limit(ps).Find(&posts).Error; err != nil {
+		log.Error(fmt.Sprintf("GetPostsPager Error %v", err))
 	}
 	return
 }
 
 // 根据ID获取文章信息
-func (srv *Service) GetArticle(id int64) (art *model.Article, err error) {
-	err = srv.dao.Table(model.ArticleTable).Where("id=?", id).First(art).Error
+func (srv *Service) GetPosts(id int) (posts *model.Posts, err error) {
+	err = srv.dao.Table(model.PostsTable).Where("id=?", id).First(posts).Error
 	return
 }
 
 // 添加文章
-func (srv *Service) AddArticle(arg *model.Article) error {
+func (srv *Service) AddPosts(arg *model.Posts) error {
 	return srv.dao.Create(arg).Error
 }
 
 // 删除文章
-func (srv *Service) DeleteArticle(id int64) (err error) {
+func (srv *Service) DeletePosts(id int) (err error) {
 	err = srv.dao.Transaction(func(tx *gorm.DB) (err error) {
-		if err = tx.Table(model.ArticleTable).Where("id=?", id).Delete(&model.Category{}).Error; err != nil {
+		if err = tx.Table(model.PostsTable).Where("id=?", id).Delete(&model.Category{}).Error; err != nil {
 			return
 		}
 		err = tx.Table(model.ArticleTable).Where("category_id=?", id).Delete(&model.CategoryRef{}).Error
@@ -52,7 +52,7 @@ func (srv *Service) DeleteArticle(id int64) (err error) {
 }
 
 // 批量删除文章
-func (srv *Service) BatchDeleteArticle(ids []int64) (err error) {
+func (srv *Service) BatchDeletePosts(ids []int64) (err error) {
 	err = srv.dao.Transaction(func(tx *gorm.DB) (err error) {
 		if err = tx.Table(model.ArticleTable).Where("id IN (?)", ids).Delete(&model.Article{}).Error; err != nil {
 			return
@@ -64,6 +64,6 @@ func (srv *Service) BatchDeleteArticle(ids []int64) (err error) {
 }
 
 // 修改文章
-func (srv *Service) UpdateArticle(arg *model.Article) error {
+func (srv *Service) UpdatePosts(arg *model.Article) error {
 	return srv.dao.Table(model.ArticleTable).Update(arg).Error
 }

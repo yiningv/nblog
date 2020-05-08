@@ -74,7 +74,7 @@ async function getPageHtml(url) {
         // 可编辑内容修复
         let contenteditable = content.querySelectorAll("div[contenteditable=true]")
         contenteditable.forEach(i => {
-            i.setAttribute("contenteditable", false)
+            i.setAttribute("contenteditable", "false");
         })
         if (content) {
             return content.innerHTML

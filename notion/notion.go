@@ -63,6 +63,22 @@ func GetSourceConfig() (sc map[string]*model.SourceConfig, err error) {
 	return
 }
 
+func GetPosts(pageId string) (err error) {
+	var tableDatas []map[string]interface{}
+	tableDatas, err = getConfigFromNotion(pageId)
+	if err != nil {
+		return
+	}
+	var data []byte
+	data, err = json.Marshal(tableDatas)
+	if err != nil {
+		return
+	}
+	var siteConfigs []*model.SiteConfig
+	err = json.Unmarshal(data, &siteConfigs)
+	return
+}
+
 func getConfigFromNotion(pageId string) (result []map[string]interface{}, err error) {
 	c := notionapi.Client{}
 	var page *notionapi.Page

@@ -9,7 +9,7 @@ import (
 
 // 分类列表
 func (srv *Service) GetCategories() (cates []*model.Category, err error) {
-	if err = srv.dao.Table(model.CategoryTable).Order("order_num DESC").Find(&cates).Error; err != nil {
+	if err = srv.dao.Order("order_num DESC").Find(&cates).Error; err != nil {
 		log.Error(fmt.Sprintf("GetCategories Error %v", err))
 	}
 	return
@@ -22,7 +22,7 @@ func (srv *Service) AddCategory(arg *model.Category) error {
 
 // 修改分类
 func (srv *Service) UpdateCategory(arg *model.Category) error {
-	return srv.dao.Table(model.CategoryTable).Update(arg).Error
+	return srv.dao.Update(arg).Error
 }
 
 // 删除分类
@@ -45,10 +45,13 @@ func (srv *Service) DeleteCategories(ids []int64) (err error) {
 // 删除分类的同时需要删除分类的关联
 func (srv *Service) deleteCategory(id int64) (err error) {
 	err = srv.dao.Transaction(func(tx *gorm.DB) (err error) {
-		if err = tx.Table(model.CategoryTable).Where("id=?", id).Delete(&model.Category{}).Error; err != nil {
+		if err = tx.Where("id=?", id).
+			Delete(&model.Category{}).Error; err != nil {
 			return
 		}
-		err = tx.Table(model.CategoryRefTable).Where("category_id=?", id).Delete(&model.CategoryRef{}).Error
+		err = tx.Where("id2=? AND type=?",
+			id, model.CorrelationPostsCategory).
+			Delete(&model.Correlation{}).Error
 		return
 	})
 	return
@@ -57,10 +60,10 @@ func (srv *Service) deleteCategory(id int64) (err error) {
 // 批量删除分类
 func (srv *Service) batchDeleteCategory(ids []int64) (err error) {
 	err = srv.dao.Transaction(func(tx *gorm.DB) (err error) {
-		if err = tx.Table(model.CategoryTable).Where("id IN (?)", ids).Delete(&model.Category{}).Error; err != nil {
+		if err = tx.Where("id IN (?)", ids).Delete(&model.Category{}).Error; err != nil {
 			return
 		}
-		err = tx.Table(model.CategoryRefTable).Where("category_id IN (?)", ids).Delete(&model.CategoryRef{}).Error
+		err = tx.Where("category_id IN (?)", ids).Delete(&model.Correlation{}).Error
 		return
 	})
 	return
