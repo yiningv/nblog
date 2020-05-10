@@ -2,8 +2,8 @@ package model
 
 type Tag struct {
 	ID         int    `json:"id" gorm:"primary_key;column:id"`
-	Name       string `json:"name" gorm:"column:name"`
-	Slug       string `json:"slug" gorm:"column:slug"`
+	Name       string `json:"name" gorm:"column:name;size:128"`
+	Slug       string `json:"slug" gorm:"column:slug;size:128"`
 	PostsCount int    `json:"posts_count" gorm:"column:posts_count"`
 }
 
@@ -15,4 +15,9 @@ func (Tag) TableName() string {
 type TagPager struct {
 	Items []*Tag `json:"items"`
 	Page  *Page  `json:"page"`
+}
+
+type TagPosts struct {
+	Tag       *Tag
+	SortPosts SortPosts
 }

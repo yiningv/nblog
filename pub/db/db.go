@@ -15,7 +15,8 @@ type Config struct {
 }
 
 func NewDB(c *Config) (db *gorm.DB) {
-	db, err := gorm.Open("mysql", c.DSN)
+	var err error
+	db, err = gorm.Open("mysql", c.DSN)
 	if err != nil {
 		panic(err)
 	}
@@ -23,6 +24,13 @@ func NewDB(c *Config) (db *gorm.DB) {
 	db.DB().SetMaxOpenConns(c.Active)
 	db.DB().SetConnMaxLifetime(c.IdleTimeout * time.Second)
 	db.SingularTable(true)
-	db.AutoMigrate(&model.SiteConfig{}, &model.SourceConfig{}, &model.Static{})
+	db.AutoMigrate(&model.Archive{},
+		&model.Correlation{},
+		&model.Posts{},
+		&model.SiteConfig{},
+		&model.SourceConfig{},
+		&model.Static{},
+		&model.Tag{},
+	)
 	return
 }

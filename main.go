@@ -27,21 +27,24 @@ func main() {
 	gin.SetMode(conf.Conf.Server.RunMode)
 	address := conf.Conf.Server.Address
 	log.Info(fmt.Sprintf("Listening and serving HTTP on %s\n", address))
-	srv := service.New(conf.Conf)
-	go srv.SyncData()
-	routes := router.Routes(srv)
+	service.Init(conf.Conf)
+	go func() {
+		service.LoadCache()
+		service.SyncData()
+	}()
+	routes := router.Routes()
 	server := &http.Server{
 		Addr:    address,
 		Handler: routes,
 	}
-	handleSignal(server, srv)
+	handleSignal(server)
 	if err := server.ListenAndServe(); err != nil {
 		log.Error(fmt.Sprintf("listen and serve failed: %v", err))
 	}
 }
 
 // handleSignal handles system signal for graceful shutdown.
-func handleSignal(server *http.Server, srv *service.Service) {
+func handleSignal(server *http.Server) {
 	c := make(chan os.Signal)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGHUP)
 
@@ -55,7 +58,7 @@ func handleSignal(server *http.Server, srv *service.Service) {
 			if err := server.Shutdown(ctx); nil != err {
 				log.Info(fmt.Sprintf("server shutdown failed: %v", err))
 			}
-			if err := srv.Close(); nil != err {
+			if err := service.Close(); nil != err {
 				log.Info(fmt.Sprintf("service close failed: %v", err))
 			}
 			log.Info("nblog exited")

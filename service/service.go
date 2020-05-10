@@ -3,86 +3,76 @@ package service
 import (
 	"fmt"
 	"github.com/jinzhu/gorm"
-	"github.com/yiningv/nblog/cache"
 	"github.com/yiningv/nblog/conf"
-	"github.com/yiningv/nblog/notion"
 	"github.com/yiningv/nblog/pub/db"
 	"github.com/yiningv/nblog/pub/log"
 	"sync"
 )
 
-var once sync.Once
-
-type Service struct {
-	conf *conf.Config
+var (
+	once sync.Once
 	dao  *gorm.DB
-}
+)
 
-func New(c *conf.Config) (s *Service) {
-	s = &Service{}
+func Init(c *conf.Config) {
 	once.Do(func() {
-		s.dao = db.NewDB(c.ORM)
-		s.dao.LogMode(true)
+		dao = db.NewDB(c.ORM)
+		dao.LogMode(true)
 	})
 	return
 }
 
-func (srv *Service) Close() (err error) {
-	if srv.dao != nil {
-		err = srv.dao.Close()
+func Close() (err error) {
+	if dao != nil {
+		err = dao.Close()
 	}
 	return
 }
 
-func (srv *Service) SyncData() {
-	srv.SyncSiteConfig()
-	srv.SyncSourceConfig()
-}
-
-// 同步站点配置
-func (srv *Service) SyncSiteConfig() {
-	siteConfigMap, err := notion.GetSiteConfig()
+// 加载必要的缓存
+func LoadCache() {
+	err := SiteConfig.loadSiteCache()
 	if err != nil {
-		log.Error(fmt.Sprintf("notion.GetSiteConfig failed: %v", err))
-		panic(err)
+		log.Error(fmt.Sprintf("SiteConfig.loadSiteCache failed: %v", err))
 	}
-
-	siteConfigsDB, err := srv.GetSiteConfig()
+	err = SourceConfig.loadSourceCache()
 	if err != nil {
-		log.Error(fmt.Sprintf("srv.GetSiteConfig failed: %v", err))
-		panic(err)
+		log.Error(fmt.Sprintf("SourceConfig.loadSourceCache failed: %v", err))
 	}
-
-	err = srv.BatchUpdateSiteConfig(siteConfigsDB, siteConfigMap)
+	err = Posts.loadPostsCache()
 	if err != nil {
-		panic(err)
+		log.Error(fmt.Sprintf("Posts.loadPostsCache failed: %v", err))
 	}
-	for k := range siteConfigMap {
-		site := siteConfigMap[k]
-		cache.SiteConfig.Put(site)
+	err = Tag.loadTagCache()
+	if err != nil {
+		log.Error(fmt.Sprintf("Tag.loadTagCache failed: %v", err))
+	}
+	err = Archive.loadArchiveCache()
+	if err != nil {
+		log.Error(fmt.Sprintf("Archive.loadArchiveCache failed: %v", err))
 	}
 }
 
-// 同步资源配置
-func (srv *Service) SyncSourceConfig() {
-	sourceConfigMap, err := notion.GetSourceConfig()
+// 从Notion上同步数据
+func SyncData() {
+	err := SiteConfig.syncSiteConfig()
 	if err != nil {
-		log.Error(fmt.Sprintf("notion.GetSourceConfig failed: %v", err))
-		panic(err)
+		log.Error(fmt.Sprintf("SiteConfig.syncSiteConfig failed: %v", err))
 	}
-
-	sourceConfigDB, err := srv.GetSourceConfig()
+	err = SourceConfig.syncSourceConfig()
 	if err != nil {
-		log.Error(fmt.Sprintf("srv.GetSourceConfig failed: %v", err))
-		panic(err)
+		log.Error(fmt.Sprintf("SourceConfig.syncSourceConfig failed: %v", err))
 	}
-
-	err = srv.BatchUpdateSourceConfig(sourceConfigDB, sourceConfigMap)
+	err = Posts.syncPosts()
 	if err != nil {
-		panic(err)
+		log.Error(fmt.Sprintf("Posts.syncPosts failed: %v", err))
 	}
-	for k := range sourceConfigMap {
-		source := sourceConfigMap[k]
-		cache.SourceConfig.Put(source)
+	err = Tag.syncTag()
+	if err != nil {
+		log.Error(fmt.Sprintf("Tag.syncTag failed: %v", err))
+	}
+	err = Archive.syncArchive()
+	if err != nil {
+		log.Error(fmt.Sprintf("Archive.syncArchive failed: %v", err))
 	}
 }

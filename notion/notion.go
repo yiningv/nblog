@@ -9,6 +9,7 @@ import (
 	"github.com/yiningv/nblog/model"
 	"github.com/yiningv/nblog/pub/log"
 	"strconv"
+	"time"
 )
 
 // 从notion上获取站点配置
@@ -32,6 +33,9 @@ func GetSiteConfig() (sc map[string]*model.SiteConfig, err error) {
 	// 去掉name重复的数据
 	for i := range siteConfigs {
 		c := siteConfigs[i]
+		if c.Name == "" {
+			continue
+		}
 		sc[c.Name] = c
 	}
 	return
@@ -58,14 +62,18 @@ func GetSourceConfig() (sc map[string]*model.SourceConfig, err error) {
 	// 去掉name重复的数据
 	for i := range sourceConfigs {
 		c := sourceConfigs[i]
+		if c.Name == "" {
+			continue
+		}
+		c.OrderNum = i
 		sc[c.Name] = c
 	}
 	return
 }
 
-func GetPosts(pageId string) (err error) {
+func GetPosts() (postsMap map[string]*model.Posts, err error) {
 	var tableDatas []map[string]interface{}
-	tableDatas, err = getConfigFromNotion(pageId)
+	tableDatas, err = getConfigFromNotion(conf.Conf.App.PostsPageId)
 	if err != nil {
 		return
 	}
@@ -74,9 +82,77 @@ func GetPosts(pageId string) (err error) {
 	if err != nil {
 		return
 	}
-	var siteConfigs []*model.SiteConfig
-	err = json.Unmarshal(data, &siteConfigs)
+	var posts []*model.Posts
+	err = json.Unmarshal(data, &posts)
+	if err != nil {
+		return
+	}
+	postsMap = make(map[string]*model.Posts)
+	for i := range posts {
+		p := posts[i]
+		if p.Title == "" {
+			continue
+		}
+		var pTime time.Time
+		failed := false
+		if p.PublishedTime != "" {
+			date := &model.Date{}
+			err := json.Unmarshal([]byte(p.PublishedTime), date)
+			if err != nil {
+				failed = true
+				break
+			}
+			location, err := time.LoadLocation(date.TimeZone)
+			if err != nil {
+				failed = true
+				break
+			}
+			startTime := "00:00"
+			if date.StartTime != "" {
+				startTime = date.StartTime
+			}
+			timeStr := fmt.Sprintf("%s %s", date.StartDate, startTime)
+			pTime, err = time.ParseInLocation("2006-01-02 15:04", timeStr, location)
+			if err != nil {
+				failed = true
+				break
+			}
+		}
+		if failed {
+			p.PTime = time.Date(2015, 10, 6, 22, 57, 0, 0, time.Local)
+		} else {
+			p.PTime = pTime
+		}
+
+		// 暂时没有找到slug很好的方案，先用pageId代替
+		p.Slug = p.PageId
+		postsMap[p.PageId] = p
+	}
 	return
+}
+
+func GetStatic(pageId string) (st []*model.Static, err error) {
+	var tableDatas []map[string]interface{}
+	tableDatas, err = getConfigFromNotion(conf.Conf.App.SourceConfigPageId)
+	if err != nil {
+		return
+	}
+	var data []byte
+	data, err = json.Marshal(tableDatas)
+	if err != nil {
+		return
+	}
+	var sourceConfigs []*model.Static
+	err = json.Unmarshal(data, &sourceConfigs)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func GetHTML(pageId string) {
+
 }
 
 func getConfigFromNotion(pageId string) (result []map[string]interface{}, err error) {
@@ -144,9 +220,10 @@ func getConfigFromNotion(pageId string) (result []map[string]interface{}, err er
 				value = strconv.FormatBool(tColumn[0].Text == "Yes")
 			case "date":
 				dateStr := tColumn[0].Attrs[0][1]
-				var date *model.Date
+				date := &model.Date{}
 				err = json.Unmarshal([]byte(dateStr), date)
 				if err != nil {
+					log.Error(fmt.Sprintf("json.Unmarshal failed: %v", err))
 					return
 				}
 				var marshal []byte
@@ -180,6 +257,7 @@ func getConfigFromNotion(pageId string) (result []map[string]interface{}, err er
 		}
 		if len(rowMap) != 0 {
 			rowMap["last_edited_time"] = tRow.Page.LastEditedTime
+			rowMap["page_id"] = notionapi.ToNoDashID(tRow.Page.ID)
 			result = append(result, rowMap)
 		}
 	}

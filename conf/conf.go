@@ -22,6 +22,7 @@ type Config struct {
 type AppConfig struct {
 	SiteConfigPageId   string
 	SourceConfigPageId string
+	PostsPageId        string
 }
 
 type ServerConfig struct {

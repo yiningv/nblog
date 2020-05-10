@@ -1,37 +1,39 @@
 package cache
 
 import (
-	"fmt"
-	"github.com/bluele/gcache"
 	"github.com/yiningv/nblog/model"
-	"github.com/yiningv/nblog/pub/log"
-	"time"
 )
 
 // SourceConfig cache.
-var SourceConfig = &SourceConfigCache{
-	nameHolder: gcache.New(1024 * 10).LRU().Expiration(30 * time.Minute).Build(),
+var SourceConfig = &sourceConfigCache{
+	nameHolder: make(map[string]*model.SourceConfig),
 }
 
-type SourceConfigCache struct {
-	nameHolder gcache.Cache
+type sourceConfigCache struct {
+	nameHolder map[string]*model.SourceConfig
 }
 
-func (cache *SourceConfigCache) Put(source *model.SourceConfig) {
-	if err := cache.nameHolder.Set(source.Name, source); nil != err {
-		log.Error(fmt.Sprintf("put SourceConfig [name=%d] into cache failed: %v", source.Name, err))
-	}
+func (cache *sourceConfigCache) Get(name string) *model.SourceConfig {
+	return cache.nameHolder[name]
 }
 
-func (cache *SourceConfigCache) Get(name string) *model.SourceConfig {
-	ret, err := cache.nameHolder.Get(name)
-	if nil != err && gcache.KeyNotFoundError != err {
-		log.Error(fmt.Sprintf("get SourceConfig [name=%s] from cache failed: %v", name, err))
-		return nil
+func (cache *sourceConfigCache) Update(newData []*model.SourceConfig) {
+	nameHolder := make(map[string]*model.SourceConfig)
+	for i := range newData {
+		c := newData[i]
+		nameHolder[c.Name] = c
 	}
-	if nil == ret {
-		return nil
-	}
+	cache.nameHolder = nameHolder
+}
 
-	return ret.(*model.SourceConfig)
+func (cache *sourceConfigCache) Replace(newData map[string]*model.SourceConfig) {
+	cache.nameHolder = newData
+}
+
+func (cache *sourceConfigCache) GetAll() (all map[string]*model.SourceConfig) {
+	ret := make(map[string]*model.SourceConfig)
+	for s := range cache.nameHolder {
+		ret[s] = cache.nameHolder[s]
+	}
+	return ret
 }

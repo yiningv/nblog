@@ -8,10 +8,6 @@ import (
 	"testing"
 )
 
-var (
-	srv *Service
-)
-
 func TestMain(m *testing.M) {
 	if err := flag.Set("conf", "../conf/conf.toml"); err != nil {
 		panic(err)
@@ -21,6 +17,6 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 	log.InitLogByConfig(conf.Conf.Zap)
-	srv = New(conf.Conf)
+	Init(conf.Conf)
 	os.Exit(m.Run())
 }

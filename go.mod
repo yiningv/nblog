@@ -13,7 +13,7 @@ require (
 	github.com/gin-gonic/gin v1.6.3
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/gorilla/sessions v1.2.0 // indirect
-	github.com/gosimple/slug v1.9.0 // indirect
+	github.com/gosimple/slug v1.9.0
 	github.com/henrylee2cn/surfer v1.2.3 // indirect
 	github.com/jinzhu/gorm v1.9.12
 	github.com/kjk/notionapi v0.0.0-20200324071853-a111439018ed
